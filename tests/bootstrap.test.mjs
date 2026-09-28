@@ -34,3 +34,20 @@ test('CLI asks Codex through the core job lifecycle', async t => {
   });
   assert.match(stdout, /finished safely/);
 });
+
+test('CLI runs a named persona through the same lifecycle', async t => {
+  const workspace = await mkdtemp(path.join(tmpdir(), 'codex-bridge-run-'));
+  const executable = await createFakeCodex(t, 'complete');
+  t.after(() => rm(workspace, { recursive: true, force: true }));
+
+  const { stdout } = await execFileAsync(process.execPath, [
+    'bin/codex-bridge.mjs', 'run', '--persona', 'review', '--prompt', 'review safely', '--workspace', workspace,
+  ], {
+    env: {
+      ...process.env,
+      CODEX_BRIDGE_CODEX_COMMAND: process.execPath,
+      CODEX_BRIDGE_CODEX_PREFIX: JSON.stringify([executable]),
+    },
+  });
+  assert.match(stdout, /finished safely/);
+});

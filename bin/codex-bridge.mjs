@@ -19,10 +19,10 @@ async function main() {
   const argv = process.argv.slice(2);
   const stdin = argv.includes('--stdin') ? await readStdin() : '';
   const parsed = await loadTask(parseCommand(argv, stdin));
-  if (parsed.command !== 'ask') throw new BridgeError(`unsupported command: ${parsed.command}`, 64);
+  if (!['ask', 'run'].includes(parsed.command)) throw new BridgeError(`unsupported command: ${parsed.command}`, 64);
   const started = await startJob({
     ...parsed,
-    persona: 'ask',
+    persona: parsed.command === 'ask' ? 'ask' : parsed.persona,
     codexCommand: process.env.CODEX_BRIDGE_CODEX_COMMAND,
     codexPrefixArgs: process.env.CODEX_BRIDGE_CODEX_PREFIX
       ? JSON.parse(process.env.CODEX_BRIDGE_CODEX_PREFIX)
