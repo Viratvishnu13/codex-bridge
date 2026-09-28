@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { parseCommand, loadTask } from '../src/core/args.mjs';
-import { startJob, waitForJob, getJobStatus, getJobResult, cancelJob } from '../src/core/jobs.mjs';
+import { spawn } from 'node:child_process';
+import { startJob, createPendingJob, executeExistingJob, waitForJob, getJobStatus, getJobResult, cancelJob } from '../src/core/jobs.mjs';
 import { BridgeError } from '../src/core/errors.mjs';
 import { ensureStateDirectory, findWorkspace } from '../src/core/workspace.mjs';
 
@@ -18,6 +19,12 @@ async function main() {
   }
 
   const argv = process.argv.slice(2);
+  if (argv[0] === 'worker') {
+    const [,, state, id] = argv;
+    if (!state || !id) throw new BridgeError('worker requires state and job id', 64);
+    await executeExistingJob({ state, id });
+    return;
+  }
   if (['status', 'result', 'cancel'].includes(argv[0])) {
     const id = argv[1];
     const workspaceIndex = argv.indexOf('--workspace');
@@ -31,14 +38,24 @@ async function main() {
   const stdin = argv.includes('--stdin') ? await readStdin() : '';
   const parsed = await loadTask(parseCommand(argv, stdin));
   if (!['ask', 'run'].includes(parsed.command)) throw new BridgeError(`unsupported command: ${parsed.command}`, 64);
-  const started = await startJob({
+  const request = {
     ...parsed,
     persona: parsed.command === 'ask' ? 'ask' : parsed.persona,
     codexCommand: process.env.CODEX_BRIDGE_CODEX_COMMAND,
     codexPrefixArgs: process.env.CODEX_BRIDGE_CODEX_PREFIX
       ? JSON.parse(process.env.CODEX_BRIDGE_CODEX_PREFIX)
       : undefined,
-  });
+  };
+  if (parsed.command === 'run') {
+    const started = await createPendingJob(request);
+    const worker = spawn(process.execPath, [process.argv[1], 'worker', started.state, started.id], {
+      detached: true, stdio: 'ignore', windowsHide: true, env: process.env,
+    });
+    worker.unref();
+    process.stdout.write(`${JSON.stringify(started)}\n`);
+    return;
+  }
+  const started = await startJob(request);
   const result = await waitForJob(started);
   process.stdout.write(`${result.text}\n`);
 }

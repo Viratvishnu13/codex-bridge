@@ -49,5 +49,5 @@ test('CLI runs a named persona through the same lifecycle', async t => {
       CODEX_BRIDGE_CODEX_PREFIX: JSON.stringify([executable]),
     },
   });
-  assert.match(stdout, /finished safely/);
+  assert.equal(JSON.parse(stdout).status, 'queued');
 });

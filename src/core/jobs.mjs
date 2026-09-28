@@ -9,17 +9,28 @@ import { preflightCodex, startCodex } from './codex-process.mjs';
 const workers = new Map();
 
 export async function startJob(request) {
+  const prepared = await createPendingJob(request);
+  return executeExistingJob(prepared);
+}
+
+export async function createPendingJob(request) {
   const workspace = await findWorkspace(request.workspace ?? process.cwd());
   const state = await ensureStateDirectory(workspace);
   await preflightCodex(request.codexCommand ?? 'codex');
   const run = resolveRunOptions({ ...request, workspace });
+  run.codexCommand = request.codexCommand;
+  run.codexPrefixArgs = request.codexPrefixArgs;
   const job = await createJob(state, run);
+  return { id: job.id, state, status: 'queued' };
+}
+
+export async function executeExistingJob({ state, id }) {
+  const job = await readJob(state, id);
+  if (job.status !== 'queued') throw new BridgeError(`job is ${job.status}`, 1);
   const eventsPath = path.join(state, 'jobs', `${job.id}.events.jsonl`);
   const worker = await startCodex({
-    ...run,
-    task: buildWorkerPrompt(run),
-    codexCommand: request.codexCommand,
-    codexPrefixArgs: request.codexPrefixArgs,
+    ...job,
+    task: buildWorkerPrompt(job),
     eventsPath,
   });
   await transitionJob(state, job.id, { status: 'running', pid: worker.child.pid });
