@@ -1,0 +1,20 @@
+{
+  "name": "codex-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "codex-bridge": "./bin/codex-bridge.mjs",
+    "codex-bridge-mcp": "./bin/codex-bridge-mcp.mjs"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:smoke": "CODEX_BRIDGE_SMOKE=1 node --test tests/smoke.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.1"
+  }
+}
