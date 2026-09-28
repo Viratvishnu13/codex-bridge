@@ -4,13 +4,14 @@ import { BridgeError } from './errors.mjs';
 import { findWorkspace, ensureStateDirectory } from './workspace.mjs';
 import { createJob, readJob, transitionJob, writeResult } from './state.mjs';
 import { resolveRunOptions, buildWorkerPrompt } from './personas.mjs';
-import { startCodex } from './codex-process.mjs';
+import { preflightCodex, startCodex } from './codex-process.mjs';
 
 const workers = new Map();
 
 export async function startJob(request) {
   const workspace = await findWorkspace(request.workspace ?? process.cwd());
   const state = await ensureStateDirectory(workspace);
+  await preflightCodex(request.codexCommand ?? 'codex');
   const run = resolveRunOptions({ ...request, workspace });
   const job = await createJob(state, run);
   const eventsPath = path.join(state, 'jobs', `${job.id}.events.jsonl`);

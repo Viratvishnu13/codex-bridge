@@ -22,6 +22,7 @@ async function main() {
   if (parsed.command !== 'ask') throw new BridgeError(`unsupported command: ${parsed.command}`, 64);
   const started = await startJob({
     ...parsed,
+    persona: 'ask',
     codexCommand: process.env.CODEX_BRIDGE_CODEX_COMMAND,
     codexPrefixArgs: process.env.CODEX_BRIDGE_CODEX_PREFIX
       ? JSON.parse(process.env.CODEX_BRIDGE_CODEX_PREFIX)
