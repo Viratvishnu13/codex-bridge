@@ -57,3 +57,24 @@ export async function getJobStatus({ state, id }) {
   const job = await readJob(state, id);
   return { id: job.id, status: job.status, threadId: job.threadId, error: job.error };
 }
+
+export async function getJobResult({ state, id }) {
+  const job = await readJob(state, id);
+  if (job.status !== 'done') throw new BridgeError(job.error ?? `job is ${job.status}`, 1);
+  const text = await readFile(path.join(state, 'jobs', `${id}.result.md`), 'utf8');
+  return { id, status: job.status, text, threadId: job.threadId };
+}
+
+export async function cancelJob({ state, id }) {
+  const job = await readJob(state, id);
+  if (['done', 'failed', 'canceled'].includes(job.status)) return { id, status: job.status };
+  if (!job.pid) throw new BridgeError('job has no owned process to cancel', 1);
+  try {
+    process.kill(job.pid);
+    await transitionJob(state, id, { status: 'canceled', pid: null, error: 'canceled by caller' });
+    return { id, status: 'canceled' };
+  } catch (error) {
+    await transitionJob(state, id, { status: 'cancel_pending', error: error.message });
+    return { id, status: 'cancel_pending' };
+  }
+}

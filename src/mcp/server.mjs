@@ -1,7 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import * as z from 'zod/v4';
-import { startJob, waitForJob } from '../core/jobs.mjs';
+import { startJob, waitForJob, getJobStatus, getJobResult, cancelJob } from '../core/jobs.mjs';
+import { ensureStateDirectory, findWorkspace } from '../core/workspace.mjs';
 
 function text(value) {
   return { content: [{ type: 'text', text: value }] };
@@ -44,6 +45,19 @@ export function createMcpServer() {
       return { isError: true, ...text(error instanceof Error ? error.message : String(error)) };
     }
   });
+  for (const [name, operation] of Object.entries({ codex_status: getJobStatus, codex_result: getJobResult, codex_cancel: cancelJob })) {
+    server.registerTool(name, {
+      description: `${name.replace('codex_', '')} a Codex Bridge job by ID.`,
+      inputSchema: { id: z.string().uuid(), workspace: z.string().optional() },
+    }, async ({ id, workspace }) => {
+      try {
+        const state = await ensureStateDirectory(await findWorkspace(workspace ?? process.cwd()));
+        return text(JSON.stringify(await operation({ state, id })));
+      } catch (error) {
+        return { isError: true, ...text(error instanceof Error ? error.message : String(error)) };
+      }
+    });
+  }
   return server;
 }
 
