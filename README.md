@@ -20,6 +20,14 @@ node bin/codex-bridge-mcp.mjs
 
 It exposes `codex_ask(prompt, workspace?, model?)`. MCP-capable callers receive the final Codex report as text.
 
+## Personas
+
+`ask` is a short read-only call. The general command accepts `research`, `review`, `implement`, and `staffer`:
+
+```powershell
+node bin/codex-bridge.mjs run --persona review --prompt "Review the current working tree"
+```
+
 ## Requirements
 
 - Node.js 20+

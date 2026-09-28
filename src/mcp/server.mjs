@@ -27,6 +27,23 @@ export function createMcpServer() {
       return { isError: true, ...text(error instanceof Error ? error.message : String(error)) };
     }
   });
+  server.registerTool('codex_run', {
+    description: 'Run a scoped Codex persona task and return its final report.',
+    inputSchema: {
+      persona: z.enum(['research', 'review', 'implement', 'staffer']),
+      prompt: z.string().min(1),
+      workspace: z.string().optional(),
+      model: z.string().optional(),
+    },
+  }, async ({ persona, prompt, workspace, model }) => {
+    try {
+      const started = await startJob({ persona, task: prompt, taskSource: 'prompt', workspace, model });
+      const result = await waitForJob(started);
+      return text(result.text);
+    } catch (error) {
+      return { isError: true, ...text(error instanceof Error ? error.message : String(error)) };
+    }
+  });
   return server;
 }
 
