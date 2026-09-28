@@ -20,6 +20,8 @@ node bin/codex-bridge-mcp.mjs
 
 It exposes `codex_ask(prompt, workspace?, model?)`. MCP-capable callers receive the final Codex report as text.
 
+For longer work, `run` returns a job ID immediately. Collect it with `wait <job-id>`, inspect it with `status <job-id>`, retrieve its completed report with `result <job-id>`, or request cancellation with `cancel <job-id>`.
+
 ## Personas
 
 `ask` is a short read-only call. The general command accepts `research`, `review`, `implement`, and `staffer`:

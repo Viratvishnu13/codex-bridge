@@ -45,7 +45,7 @@ export function createMcpServer() {
       return { isError: true, ...text(error instanceof Error ? error.message : String(error)) };
     }
   });
-  for (const [name, operation] of Object.entries({ codex_status: getJobStatus, codex_result: getJobResult, codex_cancel: cancelJob })) {
+  for (const [name, operation] of Object.entries({ codex_wait: waitForJob, codex_status: getJobStatus, codex_result: getJobResult, codex_cancel: cancelJob })) {
     server.registerTool(name, {
       description: `${name.replace('codex_', '')} a Codex Bridge job by ID.`,
       inputSchema: { id: z.string().uuid(), workspace: z.string().optional() },
