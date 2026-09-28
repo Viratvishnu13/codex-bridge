@@ -55,10 +55,16 @@ async function fail(state, id, error) {
   throw error;
 }
 
-export async function waitForJob({ state, id }) {
+export async function waitForJob({ state, id, timeoutMs = 600_000 }) {
   const key = `${state}:${id}`;
   if (workers.has(key)) await workers.get(key);
-  const job = await readJob(state, id);
+  const deadline = Date.now() + timeoutMs;
+  let job = await readJob(state, id);
+  while (['queued', 'running'].includes(job.status) && Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    job = await readJob(state, id);
+  }
+  if (['queued', 'running'].includes(job.status)) return { id, status: job.status };
   if (job.status !== 'done') throw new BridgeError(job.error ?? `job is ${job.status}`, 1);
   const text = await readFile(path.join(state, 'jobs', `${id}.result.md`), 'utf8');
   return { status: 'done', text, threadId: job.threadId };
