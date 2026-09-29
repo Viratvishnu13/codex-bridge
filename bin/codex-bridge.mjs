@@ -2,7 +2,7 @@
 
 import { parseCommand, loadTask } from '../src/core/args.mjs';
 import { spawn } from 'node:child_process';
-import { startJob, createPendingJob, executeExistingJob, waitForJob, getJobStatus, getJobResult, cancelJob } from '../src/core/jobs.mjs';
+import { startJob, createPendingJob, executeExistingJob, waitForJob, getJobStatus, getJobResult, cancelJob, continueJob } from '../src/core/jobs.mjs';
 import { BridgeError } from '../src/core/errors.mjs';
 import { ensureStateDirectory, findWorkspace } from '../src/core/workspace.mjs';
 
@@ -37,6 +37,13 @@ async function main() {
   }
   const stdin = argv.includes('--stdin') ? await readStdin() : '';
   const parsed = await loadTask(parseCommand(argv, stdin));
+  if (parsed.command === 'continue') {
+    if (!parsed.job) throw new BridgeError('continue requires --job <job-id>', 64);
+    const state = await ensureStateDirectory(await findWorkspace(parsed.workspace ?? process.cwd()));
+    const started = await continueJob({ state, id: parsed.job, task: parsed.task });
+    process.stdout.write(`${JSON.stringify(started)}\n`);
+    return;
+  }
   if (!['ask', 'run'].includes(parsed.command)) throw new BridgeError(`unsupported command: ${parsed.command}`, 64);
   const request = {
     ...parsed,

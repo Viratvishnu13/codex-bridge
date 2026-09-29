@@ -35,7 +35,7 @@ export async function startCodex(run) {
     ...(run.codexPrefixArgs ?? []),
     '--sandbox', run.sandbox,
     '--ask-for-approval', run.approvalPolicy,
-    'exec', '--json',
+    'exec', ...(run.resumeThreadId ? ['resume', '--json', run.resumeThreadId] : ['--json']),
   ];
   if (run.model) args.push('--model', run.model);
   args.push(run.task);

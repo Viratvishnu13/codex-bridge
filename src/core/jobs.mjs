@@ -95,3 +95,14 @@ export async function cancelJob({ state, id }) {
     return { id, status: 'cancel_pending' };
   }
 }
+
+export async function continueJob({ state, id, task }) {
+  const previous = await readJob(state, id);
+  if (!previous.threadId) throw new BridgeError('job has no captured Codex thread', 64);
+  if (!task?.trim()) throw new BridgeError('continuation task is required', 64);
+  const next = await createJob(state, {
+    workspace: previous.workspace, persona: previous.persona, profile: previous.profile,
+    taskSource: 'prompt', task, model: previous.model, resumeThreadId: previous.threadId,
+  });
+  return executeExistingJob({ state, id: next.id });
+}

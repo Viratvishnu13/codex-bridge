@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { BridgeError } from './errors.mjs';
 
-const valueOptions = new Set(['--persona', '--prompt', '--prompt-file', '--model', '--workspace', '--profile']);
+const valueOptions = new Set(['--persona', '--prompt', '--prompt-file', '--model', '--workspace', '--profile', '--job']);
 
 export function parseCommand(argv, stdin = '') {
   const [command, ...options] = argv;

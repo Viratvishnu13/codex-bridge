@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import * as z from 'zod/v4';
-import { startJob, waitForJob, getJobStatus, getJobResult, cancelJob } from '../core/jobs.mjs';
+import { startJob, waitForJob, getJobStatus, getJobResult, cancelJob, continueJob } from '../core/jobs.mjs';
 import { ensureStateDirectory, findWorkspace } from '../core/workspace.mjs';
 
 function text(value) {
@@ -58,6 +58,17 @@ export function createMcpServer() {
       }
     });
   }
+  server.registerTool('codex_continue', {
+    description: 'Continue a completed Codex Bridge job using its saved Codex thread.',
+    inputSchema: { id: z.string().uuid(), prompt: z.string().min(1), workspace: z.string().optional() },
+  }, async ({ id, prompt, workspace }) => {
+    try {
+      const state = await ensureStateDirectory(await findWorkspace(workspace ?? process.cwd()));
+      return text(JSON.stringify(await continueJob({ state, id, task: prompt })));
+    } catch (error) {
+      return { isError: true, ...text(error instanceof Error ? error.message : String(error)) };
+    }
+  });
   return server;
 }
 
