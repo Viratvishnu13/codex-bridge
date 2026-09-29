@@ -20,7 +20,7 @@ async function main() {
 
   const argv = process.argv.slice(2);
   if (argv[0] === 'worker') {
-    const [,, state, id] = argv;
+    const [, state, id] = argv;
     if (!state || !id) throw new BridgeError('worker requires state and job id', 64);
     await executeExistingJob({ state, id });
     return;

@@ -49,5 +49,10 @@ test('CLI runs a named persona through the same lifecycle', async t => {
       CODEX_BRIDGE_CODEX_PREFIX: JSON.stringify([executable]),
     },
   });
-  assert.equal(JSON.parse(stdout).status, 'queued');
+  const started = JSON.parse(stdout);
+  assert.equal(started.status, 'queued');
+  const waited = await execFileAsync(process.execPath, [
+    'bin/codex-bridge.mjs', 'wait', started.id, '--workspace', workspace,
+  ]);
+  assert.match(waited.stdout, /finished safely/);
 });
